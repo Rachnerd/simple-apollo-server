@@ -56,30 +56,22 @@ type ProductReplaced implements Product {
   replacement: ProductInStock!
 }
 
-interface Pagination {
+type PaginationInfo {
   page: Int!
   size: Int!
   totalResults: Int!
   totalPages: Int!
 }
 
-type PagedProducts implements Pagination {
-  page: Int!
-  size: Int!
-  totalResults: Int!
-  totalPages: Int!
-  results: [ProductUnion!]!
+type Products {
+  paginationInfo: PaginationInfo!
+  products: [Product!]!
 }
 
-type PagedCartProducts implements Pagination {
-  page: Int!
-  size: Int!
-  totalResults: Int!
-  totalPages: Int!
-  results: [CartProduct!]!
+type CartProducts {
+  paginationInfo: PaginationInfo!
+  cartProducts: [CartProduct!]!
 }
-
-union ProductUnion = ProductInStock | ProductReplaced | ProductOutOfStock
 
 # Cart
 
@@ -90,7 +82,7 @@ type CartProduct {
 }
 
 type Cart {
-  products: PagedCartProducts!
+  products: CartProducts!
   total: Float!
 }
 
@@ -102,7 +94,7 @@ input PaginationParams {
 # Queries
 
 type Query {
-  products(pagination: PaginationParams!): PagedProducts!
+  products(pagination: PaginationParams!): Products!
   cart(pagination: PaginationParams): Cart!
 }
 

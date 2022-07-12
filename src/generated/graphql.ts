@@ -5,7 +5,6 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
@@ -18,7 +17,7 @@ export type Scalars = {
 
 export type Cart = {
   __typename?: 'Cart';
-  products: PagedCartProducts;
+  products: CartProducts;
   total: Scalars['Float'];
 };
 
@@ -26,28 +25,17 @@ export type CartProduct = {
   __typename?: 'CartProduct';
   id: Scalars['ID'];
   quantity: Scalars['Int'];
-  total: Scalars['Int'];
+  total: Scalars['Float'];
 };
 
-export type PagedCartProducts = Pagination & {
-  __typename?: 'PagedCartProducts';
-  page: Scalars['Int'];
-  results: Array<CartProduct>;
-  size: Scalars['Int'];
-  totalPages: Scalars['Int'];
-  totalResults: Scalars['Int'];
+export type CartProducts = {
+  __typename?: 'CartProducts';
+  cartProducts: Array<CartProduct>;
+  paginationInfo: PaginationInfo;
 };
 
-export type PagedProducts = Pagination & {
-  __typename?: 'PagedProducts';
-  page: Scalars['Int'];
-  results: Array<ProductUnion>;
-  size: Scalars['Int'];
-  totalPages: Scalars['Int'];
-  totalResults: Scalars['Int'];
-};
-
-export type Pagination = {
+export type PaginationInfo = {
+  __typename?: 'PaginationInfo';
   page: Scalars['Int'];
   size: Scalars['Int'];
   totalPages: Scalars['Int'];
@@ -105,7 +93,11 @@ export type ProductReplaced = Product & {
   title: Scalars['String'];
 };
 
-export type ProductUnion = ProductInStock | ProductOutOfStock | ProductReplaced;
+export type Products = {
+  __typename?: 'Products';
+  paginationInfo: PaginationInfo;
+  products: Array<Product>;
+};
 
 export type Quantity = {
   __typename?: 'Quantity';
@@ -117,7 +109,7 @@ export type Quantity = {
 export type Query = {
   __typename?: 'Query';
   cart: Cart;
-  products: PagedProducts;
+  products: Products;
 };
 
 
@@ -208,18 +200,17 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Cart: ResolverTypeWrapper<Cart>;
   CartProduct: ResolverTypeWrapper<CartProduct>;
+  CartProducts: ResolverTypeWrapper<CartProducts>;
   Float: ResolverTypeWrapper<Scalars['Float']>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   Int: ResolverTypeWrapper<Scalars['Int']>;
-  PagedCartProducts: ResolverTypeWrapper<PagedCartProducts>;
-  PagedProducts: ResolverTypeWrapper<Omit<PagedProducts, 'results'> & { results: Array<ResolversTypes['ProductUnion']> }>;
-  Pagination: ResolversTypes['PagedCartProducts'] | ResolversTypes['PagedProducts'];
+  PaginationInfo: ResolverTypeWrapper<PaginationInfo>;
   PaginationParams: PaginationParams;
   Product: ResolversTypes['ProductInStock'] | ResolversTypes['ProductOutOfStock'] | ResolversTypes['ProductReplaced'];
   ProductInStock: ResolverTypeWrapper<ProductInStock>;
   ProductOutOfStock: ResolverTypeWrapper<ProductOutOfStock>;
   ProductReplaced: ResolverTypeWrapper<ProductReplaced>;
-  ProductUnion: ResolversTypes['ProductInStock'] | ResolversTypes['ProductOutOfStock'] | ResolversTypes['ProductReplaced'];
+  Products: ResolverTypeWrapper<Products>;
   Quantity: ResolverTypeWrapper<Quantity>;
   Query: ResolverTypeWrapper<{}>;
   Rating: ResolverTypeWrapper<Rating>;
@@ -231,18 +222,17 @@ export type ResolversParentTypes = {
   Boolean: Scalars['Boolean'];
   Cart: Cart;
   CartProduct: CartProduct;
+  CartProducts: CartProducts;
   Float: Scalars['Float'];
   ID: Scalars['ID'];
   Int: Scalars['Int'];
-  PagedCartProducts: PagedCartProducts;
-  PagedProducts: Omit<PagedProducts, 'results'> & { results: Array<ResolversParentTypes['ProductUnion']> };
-  Pagination: ResolversParentTypes['PagedCartProducts'] | ResolversParentTypes['PagedProducts'];
+  PaginationInfo: PaginationInfo;
   PaginationParams: PaginationParams;
   Product: ResolversParentTypes['ProductInStock'] | ResolversParentTypes['ProductOutOfStock'] | ResolversParentTypes['ProductReplaced'];
   ProductInStock: ProductInStock;
   ProductOutOfStock: ProductOutOfStock;
   ProductReplaced: ProductReplaced;
-  ProductUnion: ResolversParentTypes['ProductInStock'] | ResolversParentTypes['ProductOutOfStock'] | ResolversParentTypes['ProductReplaced'];
+  Products: Products;
   Quantity: Quantity;
   Query: {};
   Rating: Rating;
@@ -250,7 +240,7 @@ export type ResolversParentTypes = {
 };
 
 export type CartResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Cart'] = ResolversParentTypes['Cart']> = {
-  products?: Resolver<ResolversTypes['PagedCartProducts'], ParentType, ContextType>;
+  products?: Resolver<ResolversTypes['CartProducts'], ParentType, ContextType>;
   total?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -258,34 +248,22 @@ export type CartResolvers<ContextType = Context, ParentType extends ResolversPar
 export type CartProductResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CartProduct'] = ResolversParentTypes['CartProduct']> = {
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type PagedCartProductsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PagedCartProducts'] = ResolversParentTypes['PagedCartProducts']> = {
-  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  results?: Resolver<Array<ResolversTypes['CartProduct']>, ParentType, ContextType>;
-  size?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  totalResults?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+export type CartProductsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CartProducts'] = ResolversParentTypes['CartProducts']> = {
+  cartProducts?: Resolver<Array<ResolversTypes['CartProduct']>, ParentType, ContextType>;
+  paginationInfo?: Resolver<ResolversTypes['PaginationInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type PagedProductsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PagedProducts'] = ResolversParentTypes['PagedProducts']> = {
-  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  results?: Resolver<Array<ResolversTypes['ProductUnion']>, ParentType, ContextType>;
-  size?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  totalResults?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type PaginationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Pagination'] = ResolversParentTypes['Pagination']> = {
-  __resolveType: TypeResolveFn<'PagedCartProducts' | 'PagedProducts', ParentType, ContextType>;
+export type PaginationInfoResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PaginationInfo'] = ResolversParentTypes['PaginationInfo']> = {
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   size?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalResults?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ProductResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Product'] = ResolversParentTypes['Product']> = {
@@ -335,8 +313,10 @@ export type ProductReplacedResolvers<ContextType = Context, ParentType extends R
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type ProductUnionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ProductUnion'] = ResolversParentTypes['ProductUnion']> = {
-  __resolveType: TypeResolveFn<'ProductInStock' | 'ProductOutOfStock' | 'ProductReplaced', ParentType, ContextType>;
+export type ProductsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Products'] = ResolversParentTypes['Products']> = {
+  paginationInfo?: Resolver<ResolversTypes['PaginationInfo'], ParentType, ContextType>;
+  products?: Resolver<Array<ResolversTypes['Product']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type QuantityResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Quantity'] = ResolversParentTypes['Quantity']> = {
@@ -348,7 +328,7 @@ export type QuantityResolvers<ContextType = Context, ParentType extends Resolver
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   cart?: Resolver<ResolversTypes['Cart'], ParentType, ContextType, Partial<QueryCartArgs>>;
-  products?: Resolver<ResolversTypes['PagedProducts'], ParentType, ContextType, RequireFields<QueryProductsArgs, 'pagination'>>;
+  products?: Resolver<ResolversTypes['Products'], ParentType, ContextType, RequireFields<QueryProductsArgs, 'pagination'>>;
 };
 
 export type RatingResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Rating'] = ResolversParentTypes['Rating']> = {
@@ -360,14 +340,13 @@ export type RatingResolvers<ContextType = Context, ParentType extends ResolversP
 export type Resolvers<ContextType = Context> = {
   Cart?: CartResolvers<ContextType>;
   CartProduct?: CartProductResolvers<ContextType>;
-  PagedCartProducts?: PagedCartProductsResolvers<ContextType>;
-  PagedProducts?: PagedProductsResolvers<ContextType>;
-  Pagination?: PaginationResolvers<ContextType>;
+  CartProducts?: CartProductsResolvers<ContextType>;
+  PaginationInfo?: PaginationInfoResolvers<ContextType>;
   Product?: ProductResolvers<ContextType>;
   ProductInStock?: ProductInStockResolvers<ContextType>;
   ProductOutOfStock?: ProductOutOfStockResolvers<ContextType>;
   ProductReplaced?: ProductReplacedResolvers<ContextType>;
-  ProductUnion?: ProductUnionResolvers<ContextType>;
+  Products?: ProductsResolvers<ContextType>;
   Quantity?: QuantityResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Rating?: RatingResolvers<ContextType>;
