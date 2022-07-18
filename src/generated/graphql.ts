@@ -34,6 +34,29 @@ export type CartProducts = {
   paginationInfo: PaginationInfo;
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  addToCart: Scalars['Boolean'];
+  removeFromCart: Scalars['Boolean'];
+};
+
+
+export type MutationAddToCartArgs = {
+  id: Scalars['ID'];
+  quantity: Scalars['Int'];
+};
+
+
+export type MutationRemoveFromCartArgs = {
+  id: Scalars['ID'];
+};
+
+export type NotFound = {
+  __typename?: 'NotFound';
+  id: Scalars['ID'];
+  reason: Scalars['String'];
+};
+
 export type PaginationInfo = {
   __typename?: 'PaginationInfo';
   page: Scalars['Int'];
@@ -59,6 +82,7 @@ export type Product = {
 
 export type ProductInStock = Product & {
   __typename?: 'ProductInStock';
+  cartInfo?: Maybe<CartProduct>;
   category: Scalars['String'];
   description: Scalars['String'];
   id: Scalars['ID'];
@@ -93,10 +117,12 @@ export type ProductReplaced = Product & {
   title: Scalars['String'];
 };
 
+export type ProductResult = NotFound | ProductInStock | ProductOutOfStock | ProductReplaced;
+
 export type Products = {
   __typename?: 'Products';
   paginationInfo: PaginationInfo;
-  products: Array<Product>;
+  results: Array<Product>;
 };
 
 export type Quantity = {
@@ -109,12 +135,18 @@ export type Quantity = {
 export type Query = {
   __typename?: 'Query';
   cart: Cart;
+  product: ProductResult;
   products: Products;
 };
 
 
 export type QueryCartArgs = {
   pagination?: InputMaybe<PaginationParams>;
+};
+
+
+export type QueryProductArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -204,12 +236,15 @@ export type ResolversTypes = {
   Float: ResolverTypeWrapper<Scalars['Float']>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   Int: ResolverTypeWrapper<Scalars['Int']>;
+  Mutation: ResolverTypeWrapper<{}>;
+  NotFound: ResolverTypeWrapper<NotFound>;
   PaginationInfo: ResolverTypeWrapper<PaginationInfo>;
   PaginationParams: PaginationParams;
   Product: ResolversTypes['ProductInStock'] | ResolversTypes['ProductOutOfStock'] | ResolversTypes['ProductReplaced'];
   ProductInStock: ResolverTypeWrapper<ProductInStock>;
   ProductOutOfStock: ResolverTypeWrapper<ProductOutOfStock>;
   ProductReplaced: ResolverTypeWrapper<ProductReplaced>;
+  ProductResult: ResolversTypes['NotFound'] | ResolversTypes['ProductInStock'] | ResolversTypes['ProductOutOfStock'] | ResolversTypes['ProductReplaced'];
   Products: ResolverTypeWrapper<Products>;
   Quantity: ResolverTypeWrapper<Quantity>;
   Query: ResolverTypeWrapper<{}>;
@@ -226,12 +261,15 @@ export type ResolversParentTypes = {
   Float: Scalars['Float'];
   ID: Scalars['ID'];
   Int: Scalars['Int'];
+  Mutation: {};
+  NotFound: NotFound;
   PaginationInfo: PaginationInfo;
   PaginationParams: PaginationParams;
   Product: ResolversParentTypes['ProductInStock'] | ResolversParentTypes['ProductOutOfStock'] | ResolversParentTypes['ProductReplaced'];
   ProductInStock: ProductInStock;
   ProductOutOfStock: ProductOutOfStock;
   ProductReplaced: ProductReplaced;
+  ProductResult: ResolversParentTypes['NotFound'] | ResolversParentTypes['ProductInStock'] | ResolversParentTypes['ProductOutOfStock'] | ResolversParentTypes['ProductReplaced'];
   Products: Products;
   Quantity: Quantity;
   Query: {};
@@ -258,6 +296,17 @@ export type CartProductsResolvers<ContextType = Context, ParentType extends Reso
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addToCart?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationAddToCartArgs, 'id' | 'quantity'>>;
+  removeFromCart?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveFromCartArgs, 'id'>>;
+};
+
+export type NotFoundResolvers<ContextType = Context, ParentType extends ResolversParentTypes['NotFound'] = ResolversParentTypes['NotFound']> = {
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  reason?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type PaginationInfoResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PaginationInfo'] = ResolversParentTypes['PaginationInfo']> = {
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   size?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -278,6 +327,7 @@ export type ProductResolvers<ContextType = Context, ParentType extends Resolvers
 };
 
 export type ProductInStockResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ProductInStock'] = ResolversParentTypes['ProductInStock']> = {
+  cartInfo?: Resolver<Maybe<ResolversTypes['CartProduct']>, ParentType, ContextType>;
   category?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   description?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -313,9 +363,13 @@ export type ProductReplacedResolvers<ContextType = Context, ParentType extends R
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ProductResultResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ProductResult'] = ResolversParentTypes['ProductResult']> = {
+  __resolveType: TypeResolveFn<'NotFound' | 'ProductInStock' | 'ProductOutOfStock' | 'ProductReplaced', ParentType, ContextType>;
+};
+
 export type ProductsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Products'] = ResolversParentTypes['Products']> = {
   paginationInfo?: Resolver<ResolversTypes['PaginationInfo'], ParentType, ContextType>;
-  products?: Resolver<Array<ResolversTypes['Product']>, ParentType, ContextType>;
+  results?: Resolver<Array<ResolversTypes['Product']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -328,6 +382,7 @@ export type QuantityResolvers<ContextType = Context, ParentType extends Resolver
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   cart?: Resolver<ResolversTypes['Cart'], ParentType, ContextType, Partial<QueryCartArgs>>;
+  product?: Resolver<ResolversTypes['ProductResult'], ParentType, ContextType, RequireFields<QueryProductArgs, 'id'>>;
   products?: Resolver<ResolversTypes['Products'], ParentType, ContextType, RequireFields<QueryProductsArgs, 'pagination'>>;
 };
 
@@ -341,11 +396,14 @@ export type Resolvers<ContextType = Context> = {
   Cart?: CartResolvers<ContextType>;
   CartProduct?: CartProductResolvers<ContextType>;
   CartProducts?: CartProductsResolvers<ContextType>;
+  Mutation?: MutationResolvers<ContextType>;
+  NotFound?: NotFoundResolvers<ContextType>;
   PaginationInfo?: PaginationInfoResolvers<ContextType>;
   Product?: ProductResolvers<ContextType>;
   ProductInStock?: ProductInStockResolvers<ContextType>;
   ProductOutOfStock?: ProductOutOfStockResolvers<ContextType>;
   ProductReplaced?: ProductReplacedResolvers<ContextType>;
+  ProductResult?: ProductResultResolvers<ContextType>;
   Products?: ProductsResolvers<ContextType>;
   Quantity?: QuantityResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;

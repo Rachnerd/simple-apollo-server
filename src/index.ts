@@ -3,13 +3,7 @@ import DataLoader from "dataloader";
 import { readFileSync } from "fs";
 import path from "path";
 import { Context } from "./context";
-import {
-  Product,
-  ProductInStock,
-  ProductReplaced,
-  ProductResolvers,
-  Resolvers,
-} from "./generated/graphql";
+import { CartProduct, ProductResolvers, Resolvers } from "./generated/graphql";
 import { CartService } from "./services/cart.service";
 import { PriceService } from "./services/price.service";
 import { ProductsService } from "./services/products.service";
@@ -32,30 +26,47 @@ const resolvers: Resolvers = {
     products: (_obj, { pagination }, { services: { products } }, _info) =>
       products.get(pagination),
 
-    cart: (_obj, { pagination }, { services: { cart } }, _info) =>
-      cart.get(pagination),
-  },
-  Product: {
-    __resolveType: (product: Product) => {
-      if ((product as ProductInStock).quantity !== undefined) {
-        return "ProductInStock";
-      }
-      if ((product as ProductReplaced).replacement !== undefined) {
-        return "ProductReplaced";
-      }
-      return "ProductOutOfStock";
+    cart: async (_obj, { pagination }, { services: { cart } }, _info) => {
+      const {
+        total,
+        products: { results, ...paginationInfo },
+      } = await cart.get(pagination);
+      return {
+        products: {
+          cartProducts: results,
+          paginationInfo,
+        },
+        total,
+      };
     },
+
+    product: async (_obj, { id }, { services: { products } }) =>
+      (await products.getById(id)) ?? {
+        id,
+        reason: "Product does not exist",
+      },
+  },
+  NotFound: {
+    __isTypeOf: (notFound) => notFound.reason !== undefined,
   },
   ProductInStock: {
+    __isTypeOf: (product) => product.quantity !== undefined,
+    limited: ({ quantity: { max, step } }) => max / step <= 5,
+    cartInfo: ({ id }, _args, { dataloaders: { cart } }) => cart.load(id),
     price: resolvePrice,
-    limited: ({ quantity: { max, step } }, _args, _context, _info) =>
-      max / step <= 5,
   },
   ProductReplaced: {
+    __isTypeOf: (product) => product.replacement !== undefined,
     price: resolvePrice,
   },
   ProductOutOfStock: {
+    __isTypeOf: (product) => product.title !== undefined,
     price: resolvePrice,
+  },
+  Mutation: {
+    addToCart: (_obj, args, { services: { cart } }) => cart.post(args),
+    removeFromCart: (_obj, args, { services: { cart } }) =>
+      cart.delete(args.id),
   },
 };
 
@@ -66,14 +77,26 @@ const server = new ApolloServer({
   cache: "bounded",
   context: (): Context => {
     const priceService = new PriceService();
+    const cartService = new CartService();
     return {
       services: {
         products: new ProductsService(),
         price: priceService,
-        cart: new CartService(),
+        cart: cartService,
       },
       dataloaders: {
         price: new DataLoader(priceService.getByIds),
+        cart: new DataLoader(async (ids) => {
+          const cart = await cartService.get();
+          const productsMap = cart.products.results.reduce(
+            (acc, product) => ({
+              ...acc,
+              [product.id]: product,
+            }),
+            {} as Record<string, CartProduct>
+          );
+          return ids.map((id) => productsMap[id]);
+        }),
       },
     };
   },

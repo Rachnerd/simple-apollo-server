@@ -26,22 +26,13 @@ type ProductInStock implements Product {
   # Unique fields
   quantity: Quantity!
   limited: Boolean!
+  cartInfo: CartProduct
 }
 
 type Quantity {
   min: Int!
   step: Int!
   max: Int!
-}
-
-type ProductOutOfStock implements Product {
-  id: ID!
-  title: String!
-  price: Float!
-  description: String!
-  category: String!
-  image: String!
-  rating: Rating!
 }
 
 type ProductReplaced implements Product {
@@ -56,6 +47,16 @@ type ProductReplaced implements Product {
   replacement: ProductInStock!
 }
 
+type ProductOutOfStock implements Product {
+  id: ID!
+  title: String!
+  price: Float!
+  description: String!
+  category: String!
+  image: String!
+  rating: Rating!
+}
+
 type PaginationInfo {
   page: Int!
   size: Int!
@@ -65,7 +66,7 @@ type PaginationInfo {
 
 type Products {
   paginationInfo: PaginationInfo!
-  products: [Product!]!
+  results: [Product!]!
 }
 
 type CartProducts {
@@ -91,11 +92,28 @@ input PaginationParams {
   size: Int!
 }
 
+type NotFound {
+  id: ID!
+  reason: String!
+}
+
+union ProductResult =
+    ProductInStock
+  | ProductOutOfStock
+  | ProductReplaced
+  | NotFound
+
 # Queries
 
 type Query {
   products(pagination: PaginationParams!): Products!
   cart(pagination: PaginationParams): Cart!
+  product(id: ID!): ProductResult!
 }
 
 # Mutations
+
+type Mutation {
+  addToCart(id: ID!, quantity: Int!): Boolean!
+  removeFromCart(id: ID!): Boolean!
+}

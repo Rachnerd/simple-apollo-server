@@ -1,5 +1,11 @@
 import fetch from "node-fetch";
-import { Products, PaginationParams } from "../generated/graphql";
+import {
+  PaginationParams,
+  ProductInStock,
+  ProductOutOfStock,
+  ProductReplaced,
+  Products,
+} from "../generated/graphql";
 
 export class ProductsService {
   async get({ page, size }: PaginationParams): Promise<Products> {
@@ -11,8 +17,18 @@ export class ProductsService {
 
     return {
       paginationInfo,
-      products: results,
+      results,
     };
+  }
+
+  async getById(
+    id: string
+  ): Promise<ProductInStock | ProductOutOfStock | ProductReplaced | undefined> {
+    const res = await fetch(`http://localhost:8080/products/${id}`);
+    if (res.status === 404) {
+      return undefined;
+    }
+    return await res.json();
   }
 }
 
