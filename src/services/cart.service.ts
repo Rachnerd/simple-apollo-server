@@ -1,26 +1,25 @@
 import fetch from "node-fetch";
-import { CartProduct, PaginationParams } from "../generated/graphql";
-
-interface ApiCart {
-  products: {
-    results: CartProduct[];
-    page: number;
-    size: number;
-    totalPages: number;
-    totalResults: number;
-  };
-  total: number;
-}
-
+import { Cart, CartProduct, PaginationParams } from "../generated/graphql";
 export class CartService {
-  async get(pagination?: PaginationParams | null): Promise<ApiCart> {
+  async get(pagination?: PaginationParams | null): Promise<Cart> {
     const res = await fetch(
       `http://localhost:8080/cart${
         pagination ? `?page=${pagination.page}&size=${pagination.size}` : ``
       }`
     );
 
-    return await res.json();
+    const {
+      total,
+      products: { results, ...paginationInfo },
+    } = await res.json();
+
+    return {
+      products: {
+        cartProducts: results,
+        paginationInfo,
+      },
+      total,
+    };
   }
 
   async post(product: Pick<CartProduct, "id" | "quantity">): Promise<boolean> {

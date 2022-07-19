@@ -1,12 +1,8 @@
 import { ApolloServer, gql } from "apollo-server";
-import DataLoader from "dataloader";
 import { readFileSync } from "fs";
 import path from "path";
-import { Context } from "./context";
-import { CartProduct, ProductResolvers, Resolvers } from "./generated/graphql";
-import { CartService } from "./services/cart.service";
-import { PriceService } from "./services/price.service";
-import { ProductsService } from "./services/products.service";
+import { createContext } from "./context";
+import { ProductResolvers, Resolvers } from "./generated/graphql";
 
 const schemaPath = path.resolve(process.cwd(), "src", "schema.graphql");
 
@@ -23,23 +19,12 @@ const resolvePrice: ProductResolvers["price"] = (
 
 const resolvers: Resolvers = {
   Query: {
-    products: (_obj, { pagination }, { services: { products } }, _info) =>
-      products.get(pagination),
-
-    cart: async (_obj, { pagination }, { services: { cart } }, _info) => {
-      const {
-        total,
-        products: { results, ...paginationInfo },
-      } = await cart.get(pagination);
-      return {
-        products: {
-          cartProducts: results,
-          paginationInfo,
-        },
-        total,
-      };
-    },
-
+    products: (_obj, { pagination }, { dataloaders: { products } }, _info) =>
+      products.load(`${pagination.page}:${pagination.size}`),
+    cart: async (_obj, { pagination }, { dataloaders: { cart } }, _info) =>
+      await cart.load(
+        pagination ? `${pagination.page}:${pagination.size}` : ``
+      ),
     product: async (_obj, { id }, { services: { products } }) =>
       (await products.getById(id)) ?? {
         id,
@@ -52,7 +37,8 @@ const resolvers: Resolvers = {
   ProductInStock: {
     __isTypeOf: (product) => product.quantity !== undefined,
     limited: ({ quantity: { max, step } }) => max / step <= 5,
-    cartInfo: ({ id }, _args, { dataloaders: { cart } }) => cart.load(id),
+    cartInfo: ({ id }, _args, { dataloaders: { cartInfo } }) =>
+      cartInfo.load(id),
     price: resolvePrice,
   },
   ProductReplaced: {
@@ -75,31 +61,7 @@ const server = new ApolloServer({
   resolvers,
   csrfPrevention: true,
   cache: "bounded",
-  context: (): Context => {
-    const priceService = new PriceService();
-    const cartService = new CartService();
-    return {
-      services: {
-        products: new ProductsService(),
-        price: priceService,
-        cart: cartService,
-      },
-      dataloaders: {
-        price: new DataLoader(priceService.getByIds),
-        cart: new DataLoader(async (ids) => {
-          const cart = await cartService.get();
-          const productsMap = cart.products.results.reduce(
-            (acc, product) => ({
-              ...acc,
-              [product.id]: product,
-            }),
-            {} as Record<string, CartProduct>
-          );
-          return ids.map((id) => productsMap[id]);
-        }),
-      },
-    };
-  },
+  context: createContext,
 });
 
 server.listen().then(({ url }) => {
